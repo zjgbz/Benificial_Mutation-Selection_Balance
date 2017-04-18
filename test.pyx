@@ -1,4 +1,6 @@
 import numpy as np
+import collections
+import math
 import h5py
 import os
 cimport numpy as np
@@ -23,11 +25,18 @@ def initial(DTYPE_t N):
 
 def offspring(np.ndarray[DTYPE_t, ndim=2] n):
 	cdef int length = n.shape[0]
+	weight_array = np.zeros((length,1))
+	mut_sum_real = np.dot(n[:,1],n[:,0])
 	for i in range(0, length):
-		birth_rate = n[i,1]
-		num = n[i,0]
-		num_offspring = np.random.poisson(num * birth_rate, 1)
-		n[i, 0] = num_offspring
+		weight_array[i,0] = n[i,1]*n[i,0]/mut_sum_real
+	offspring_gene = np.random.choice(np.arange(length),size=int(np.sum(n[:,0])),replace=True,p=weight_array[:,0])
+	offspring_distribution = collections.Counter(offspring_gene)
+	for i in range(0, length):
+		n[i,0] = offspring_distribution[i]
+	#	birth_rate = n[i,1]
+	#	num = n[i,0]
+	#	num_offspring = np.random.poisson(num * birth_rate, 1)
+	#	n[i, 0] = num_offspring
 	return n
 
 def mutation(np.ndarray[DTYPE_t, ndim=2] n, double Ub, double s):
@@ -37,10 +46,10 @@ def mutation(np.ndarray[DTYPE_t, ndim=2] n, double Ub, double s):
 	cdef np.ndarray[DTYPE1_t, ndim=1] num_mut
 	mut_list = []
 	for i in range(0, length):
-		num = n[i,0]
-		#num_mut = np.random.poisson(Ub, num)
-		num_mut_pre = np.floor(np.random.uniform(0,1,num) + Ub * np.ones(num))
-		num_mut = num_mut_pre.astype(int)
+		num = int(n[i,0])
+		num_mut = np.random.poisson(Ub, num)
+	#	num_mut_pre = np.floor(np.random.uniform(0,1,num) + Ub * np.ones(num))
+	#	num_mut = num_mut_pre.astype(int)
 		if num_mut.shape[0]>0 and i + 1 > DIM-1:
 			DIM += 10
 			id = 1
@@ -64,7 +73,8 @@ def mutation(np.ndarray[DTYPE_t, ndim=2] n, double Ub, double s):
 	total_num = np.sum(n[:,0])
 	free(new)
 	for i in range(0, DIM):
-		birth_rate = (1.+i*s)/(1+s*mut_sum/total_num)
+	#	birth_rate = n[i,0]/total_num*(1. + s * (i - mut_sum / total_num))
+		birth_rate = 1. + s * (i - mut_sum / total_num)
 		n[i,1] = birth_rate if (birth_rate>0) else 0
 	return n
 
