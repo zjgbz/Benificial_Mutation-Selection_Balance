@@ -12,7 +12,7 @@ ctypedef np.double_t DTYPE_t
 
 DTYPE1 = np.int
 ctypedef np.int_t DTYPE1_t
-
+ 
 cdef int DIM = 30
 cdef int id = 0
 
